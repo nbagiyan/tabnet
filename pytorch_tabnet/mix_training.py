@@ -3,6 +3,8 @@ import numpy as np
 from sklearn.utils import check_array
 from torch.utils.data import DataLoader
 from pytorch_tabnet import tab_network
+from abc import abstractmethod
+from torch.nn.utils import clip_grad_norm_
 from .tab_network import TabNetMixedTraining
 
 from pytorch_tabnet.utils import (
@@ -160,6 +162,56 @@ class TabNetMixedTrainer(TabModel):
         # Call method on_train_end for all callbacks
         self._callback_container.on_train_end()
         self.network.eval()
+
+
+    @abstractmethod
+    def compute_loss(self, y_pred, y_true, output, embedded_x, obf_vars):
+        raise NotImplementedError(
+            "users must define compute_loss to use this base class"
+        )
+
+    def _train_batch(self, X, y):
+        """
+        Trains one batch of data
+
+        Parameters
+        ----------
+        X : torch.Tensor
+            Train matrix
+        y : torch.Tensor
+            Target matrix
+
+        Returns
+        -------
+        batch_outs : dict
+            Dictionnary with "y": target and "score": prediction scores.
+        batch_logs : dict
+            Dictionnary with "batch_size" and "loss".
+        """
+        batch_logs = {"batch_size": X.shape[0]}
+
+        X = X.to(self.device).float()
+        y = y.to(self.device).float()
+
+        for param in self.network.parameters():
+            param.grad = None
+
+        output, embedded_x, obf_vars, pred, M_loss = self.network(X)
+
+        loss = self.compute_loss(pred, y, output, embedded_x, obf_vars)
+        # Add the overall sparsity loss
+        loss -= self.lambda_sparse * M_loss
+
+        # Perform backward pass and optimization
+        loss.backward()
+        if self.clip_value:
+            clip_grad_norm_(self.network.parameters(), self.clip_value)
+        self._optimizer.step()
+
+        batch_logs["loss"] = loss.cpu().detach().numpy().item()
+
+        return batch_logs
+
 
     def _update_network_params(self):
         self.network.virtual_batch_size = self.virtual_batch_size
