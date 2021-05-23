@@ -465,7 +465,7 @@ class TabNetMixedTraining(torch.nn.Module):
             # set prior of encoder with obf_mask
             prior = 1 - obf_vars
             steps_out, _ = self.encoder(masked_x, prior=prior)
-            predict = self.predict_encoder(steps_out)
+            predict = self.predict_encoder(torch.sum(torch.stack(steps_out, dim=0), dim=0))
             res = self.decoder(steps_out)
             return res, embedded_x, obf_vars, predict
         else:
