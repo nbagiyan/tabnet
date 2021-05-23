@@ -195,7 +195,7 @@ class TabNetMixedTrainerClassifier(TabNetMixedTrainer):
         self._default_loss = combined_loss
         self._task = 'classification'
         self.additional_loss = torch.nn.functional.cross_entropy
-        self._default_metric = ['auc', 'accuracy']
+        self._default_metric = 'auc'
 
     def compute_loss(self, y_pred, y_true,  output, embedded_x, obf_vars):
         return self.loss_fn(self.additional_loss, self.lambda_, y_pred, y_true,  output, embedded_x, obf_vars)
@@ -298,7 +298,7 @@ class TabNetMixedTrainerRegressor(TabNetMixedTrainer):
         self._default_loss = combined_loss
         self._task = 'regression'
         self.additional_loss = torch.nn.functional.mse_loss
-        self._default_metric = ['mse', 'mae']
+        self._default_metric = 'mse'
 
     def prepare_target(self, y):
         return y
