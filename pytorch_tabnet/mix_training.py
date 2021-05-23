@@ -243,7 +243,7 @@ class TabNetMixedTrainerClassifier(TabNetMixedTrainer):
         self._default_metric = 'auc'
 
     def compute_mixed_loss(self, y_pred, y_true,  output, embedded_x, obf_vars):
-        return self.loss_fn(self.additional_loss, self.lambda_, y_pred, y_true,  output, embedded_x, obf_vars)
+        return self.loss_fn(self.additional_loss, self.lambda_, y_true, y_pred,  output, embedded_x, obf_vars)
 
     def weight_updater(self, weights):
         """
