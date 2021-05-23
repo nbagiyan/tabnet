@@ -396,7 +396,7 @@ class TabNetMixedTraining(torch.nn.Module):
         momentum=0.02,
         mask_type="sparsemax",
     ):
-        super(TabNetPretraining, self).__init__()
+        super(TabNetMixedTraining, self).__init__()
 
         self.cat_idxs = cat_idxs or []
         self.cat_dims = cat_dims or []
