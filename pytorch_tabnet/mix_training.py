@@ -205,7 +205,6 @@ class TabNetMixedTrainer(TabModel):
 
         return batch_logs
 
-
     def _update_network_params(self):
         self.network.virtual_batch_size = self.virtual_batch_size
         self.network.pretraining_ratio = self.pretraining_ratio
