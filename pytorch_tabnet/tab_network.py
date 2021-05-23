@@ -404,6 +404,7 @@ class TabNetMixedTraining(torch.nn.Module):
 
         self.input_dim = input_dim
         self.output_dim = output_dim
+        self.is_multi_task = isinstance(output_dim, list)
         self.n_d = n_d
         self.n_a = n_a
         self.n_steps = n_steps
@@ -413,6 +414,7 @@ class TabNetMixedTraining(torch.nn.Module):
         self.n_shared = n_shared
         self.mask_type = mask_type
         self.pretraining_ratio = pretraining_ratio
+        self.initial_bn = BatchNorm1d(self.input_dim, momentum=0.01)
 
         if self.n_steps <= 0:
             raise ValueError("n_steps should be a positive integer.")
@@ -440,7 +442,16 @@ class TabNetMixedTraining(torch.nn.Module):
             mask_type=mask_type,
         )
 
-        self.predict_encoder = Linear(self.post_embed_dim, self.output_dim)
+        if self.is_multi_task:
+            self.multi_task_mappings = torch.nn.ModuleList()
+            for task_dim in output_dim:
+                task_mapping = Linear(n_d, task_dim, bias=False)
+                initialize_non_glu(task_mapping, n_d, task_dim)
+                self.multi_task_mappings.append(task_mapping)
+
+        else:
+            self.final_mapping = Linear(n_d, output_dim, bias=False)
+            initialize_non_glu(self.final_mapping, n_d, output_dim)
 
         self.decoder = TabNetDecoder(
             self.post_embed_dim,
@@ -464,15 +475,29 @@ class TabNetMixedTraining(torch.nn.Module):
             masked_x, obf_vars = self.masker(embedded_x)
             # set prior of encoder with obf_mask
             prior = 1 - obf_vars
-            steps_out, _ = self.encoder(masked_x, prior=prior)
-            predict = self.predict_encoder(torch.sum(torch.stack(steps_out, dim=0), dim=0))
+            steps_out, M_loss = self.encoder(masked_x, prior=prior)
+            res_predict = torch.sum(torch.stack(steps_out, dim=0), dim=0)
+            if self.is_multi_task:
+                # Result will be in list format
+                predict = []
+                for task_mapping in self.multi_task_mappings:
+                    predict.append(task_mapping(res_predict))
+            else:
+                predict = self.final_mapping(res_predict)
             res = self.decoder(steps_out)
-            return res, embedded_x, obf_vars, predict
+            return res, embedded_x, obf_vars, predict, M_loss
         else:
-            steps_out, _ = self.encoder(embedded_x)
+            steps_out, M_loss = self.encoder(embedded_x)
             res = self.decoder(steps_out)
-            predict = self.predict_encoder(steps_out)
-            return res, embedded_x, torch.ones(embedded_x.shape).to(x.device), predict
+            res_predict = torch.sum(torch.stack(steps_out, dim=0), dim=0)
+            if self.is_multi_task:
+                # Result will be in list format
+                predict = []
+                for task_mapping in self.multi_task_mappings:
+                    predict.append(task_mapping(res_predict))
+            else:
+                predict = self.final_mapping(res_predict)
+            return res, embedded_x, torch.ones(embedded_x.shape).to(x.device), predict, M_loss
 
     def forward_masks(self, x):
         embedded_x = self.embedder(x)
