@@ -84,7 +84,7 @@ def combined_loss(additional_loss, lambda_, y_true, y_pred, y_pred_embedded, emb
     features_loss = features_loss / (nb_reconstructed_variables + eps)
     # here we take the mean per batch, contrary to the paper
     loss = torch.mean(features_loss)
-    main_loss = additional_loss(y_true, y_pred)
+    main_loss = additional_loss(y_pred, y_true.long())
     return main_loss + lambda_ * loss
 
 
