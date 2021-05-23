@@ -205,6 +205,65 @@ class TabNetMixedTrainer(TabModel):
 
         return batch_logs
 
+    def _predict_epoch(self, name, loader):
+        """
+        Predict an epoch and update metrics.
+
+        Parameters
+        ----------
+        name : str
+            Name of the validation set
+        loader : torch.utils.data.Dataloader
+                DataLoader with validation set
+        """
+        # Setting network on evaluation mode
+        self.network.eval()
+
+        list_y_true = []
+        list_y_score = []
+
+        # Main loop
+        for batch_idx, (X, y) in enumerate(loader):
+            output, embedded_x, obf_vars, scores, M_loss = self._predict_batch(X)
+            list_y_true.append(y)
+            list_y_score.append(scores)
+
+        y_true, scores = self.stack_batches(list_y_true, list_y_score)
+
+        metrics_logs = self._metric_container_dict[name](y_true, scores)
+        self.network.train()
+        self.history.epoch_metrics.update(metrics_logs)
+        return
+
+    def _predict_batch(self, X):
+        """
+        Predict one batch of data.
+
+        Parameters
+        ----------
+        X : torch.Tensor
+            Owned products
+
+        Returns
+        -------
+        np.array
+            model scores
+        """
+        X = X.to(self.device).float()
+
+        # compute model output
+        output, embedded_x, obf_vars, scores, M_loss = self.network(X)
+
+        if isinstance(scores, list):
+            scores = [x.cpu().detach().numpy() for x in scores]
+        else:
+            scores = scores.cpu().detach().numpy()
+            embedded_x = embedded_x.cpu().detach().numpy()
+            output = output.cpu().detach().numpy()
+            obf_vars = obf_vars.cpu().detach().numpy()
+            M_loss = M_loss.cpu().detach().numpy()
+        return output, embedded_x, obf_vars, scores, M_loss
+
     def _update_network_params(self):
         self.network.virtual_batch_size = self.virtual_batch_size
         self.network.pretraining_ratio = self.pretraining_ratio
