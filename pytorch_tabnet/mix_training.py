@@ -238,6 +238,7 @@ class TabNetMixedTrainerClassifier(TabNetMixedTrainer):
         super(TabNetMixedTrainerClassifier, self).__post_init__()
         self._default_loss = combined_loss
         self._task = 'classification'
+        self.lambda_ = 0.1
         self.additional_loss = torch.nn.functional.cross_entropy
         self._default_metric = 'auc'
 
