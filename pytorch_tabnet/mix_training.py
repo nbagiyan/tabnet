@@ -38,6 +38,7 @@ class TabNetMixedTrainer(TabModel):
         y_train,
         eval_set=None,
         eval_name=None,
+        eval_metric=None,
         loss_fn=None,
         pretraining_ratio=0.5,
         weights=0,
@@ -129,7 +130,7 @@ class TabNetMixedTrainer(TabModel):
         if not hasattr(self, 'network'):
             self._set_network()
         self._update_network_params()
-        self._set_metrics(eval_names)
+        self._set_metrics(eval_metric, eval_names)
         self._set_optimizer()
         self._set_callbacks(callbacks)
 
@@ -163,38 +164,6 @@ class TabNetMixedTrainer(TabModel):
     def _update_network_params(self):
         self.network.virtual_batch_size = self.virtual_batch_size
         self.network.pretraining_ratio = self.pretraining_ratio
-
-    def _set_metrics(self, eval_names):
-        """Set attributes relative to the metrics.
-
-        Parameters
-        ----------
-        metrics : list of str
-            List of eval metric names.
-        eval_names : list of str
-            List of eval set names.
-
-        """
-        metrics = [self._default_metric]
-
-        metrics = check_metrics(metrics)
-        # Set metric container for each sets
-        self._metric_container_dict = {}
-        for name in eval_names:
-            self._metric_container_dict.update(
-                {name: UnsupMetricContainer(metrics, prefix=f"{name}_")}
-            )
-
-        self._metrics = []
-        self._metrics_names = []
-        for _, metric_container in self._metric_container_dict.items():
-            self._metrics.extend(metric_container.metrics)
-            self._metrics_names.extend(metric_container.names)
-
-        # Early stopping metric is the last eval metric
-        self.early_stopping_metric = (
-            self._metrics_names[-1] if len(self._metrics_names) > 0 else None
-        )
 
     def _set_network(self):
         """Setup the network and explain matrix."""
