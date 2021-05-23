@@ -163,13 +163,6 @@ class TabNetMixedTrainer(TabModel):
         self._callback_container.on_train_end()
         self.network.eval()
 
-
-    @abstractmethod
-    def compute_loss(self, y_pred, y_true, output, embedded_x, obf_vars):
-        raise NotImplementedError(
-            "users must define compute_loss to use this base class"
-        )
-
     def _train_batch(self, X, y):
         """
         Trains one batch of data
@@ -198,7 +191,7 @@ class TabNetMixedTrainer(TabModel):
 
         output, embedded_x, obf_vars, pred, M_loss = self.network(X)
 
-        loss = self.compute_loss(pred, y, output, embedded_x, obf_vars)
+        loss = self.compute_mixed_loss(pred, y, output, embedded_x, obf_vars)
         # Add the overall sparsity loss
         loss -= self.lambda_sparse * M_loss
 
@@ -249,7 +242,7 @@ class TabNetMixedTrainerClassifier(TabNetMixedTrainer):
         self.additional_loss = torch.nn.functional.cross_entropy
         self._default_metric = 'auc'
 
-    def compute_loss(self, y_pred, y_true,  output, embedded_x, obf_vars):
+    def compute_mixed_loss(self, y_pred, y_true,  output, embedded_x, obf_vars):
         return self.loss_fn(self.additional_loss, self.lambda_, y_pred, y_true,  output, embedded_x, obf_vars)
 
     def weight_updater(self, weights):
@@ -355,7 +348,7 @@ class TabNetMixedTrainerRegressor(TabNetMixedTrainer):
     def prepare_target(self, y):
         return y
 
-    def compute_loss(self, y_pred, y_true, output, embedded_x, obf_vars):
+    def compute_mixed_loss(self, y_pred, y_true, output, embedded_x, obf_vars):
         return self.loss_fn(self.additional_loss, self.lambda_, y_pred, y_true, output, embedded_x, obf_vars)
 
     def update_fit_params(

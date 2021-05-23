@@ -752,6 +752,27 @@ class TabModel(BaseEstimator):
         )
 
     @abstractmethod
+    def compute_mixed_loss(self, y_pred, y_true, output, embedded_x, obf_vars):
+        """
+        Compute the loss.
+
+        Parameters
+        ----------
+        y_score : a :tensor: `torch.Tensor`
+            Score matrix
+        y_true : a :tensor: `torch.Tensor`
+            Target matrix
+
+        Returns
+        -------
+        float
+            Loss value
+        """
+        raise NotImplementedError(
+            "users must define compute_loss to use this base class"
+        )
+
+    @abstractmethod
     def prepare_target(self, y):
         """
         Prepare target before training.
