@@ -3,6 +3,8 @@ import numpy as np
 from sklearn.utils import check_array
 from torch.utils.data import DataLoader
 from pytorch_tabnet import tab_network
+from .tab_network import TabNetMixedTraining
+
 from pytorch_tabnet.utils import (
     create_explain_matrix,
     filter_weights,
@@ -198,7 +200,7 @@ class TabNetMixedTrainer(TabModel):
         """Setup the network and explain matrix."""
         if not hasattr(self, 'pretraining_ratio'):
             self.pretraining_ratio = 0.5
-        self.network = tab_network.TabNetMixedTraining(
+        self.network = TabNetMixedTraining(
             self.input_dim,
             self.output_dim,
             pretraining_ratio=self.pretraining_ratio,
