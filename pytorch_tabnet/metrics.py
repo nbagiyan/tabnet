@@ -74,7 +74,7 @@ def combined_loss(additional_loss, lambda_, y_true, y_pred, y_pred_embedded, emb
     loss : torch float
         Unsupervised loss, average value over batch samples.
     """
-    errors = y_pred - embedded_x
+    errors = y_pred_embedded - embedded_x
     reconstruction_errors = torch.mul(errors, obf_vars) ** 2
     batch_stds = torch.std(embedded_x, dim=0) ** 2 + eps
     features_loss = torch.matmul(reconstruction_errors, 1 / batch_stds)
