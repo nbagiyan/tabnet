@@ -382,6 +382,7 @@ class TabNetMixedTraining(torch.nn.Module):
         input_dim,
         output_dim,
         pretraining_ratio=0.2,
+        lambda_=0.1,
         n_d=8,
         n_a=8,
         n_steps=3,
@@ -415,6 +416,7 @@ class TabNetMixedTraining(torch.nn.Module):
         self.mask_type = mask_type
         self.pretraining_ratio = pretraining_ratio
         self.initial_bn = BatchNorm1d(self.input_dim, momentum=0.01)
+        self.lambda_ = lambda_
 
         if self.n_steps <= 0:
             raise ValueError("n_steps should be a positive integer.")
