@@ -30,14 +30,6 @@ class TabNetMixedTrainer(TabModel):
     def prepare_target(self, y):
         return y
 
-    def update_fit_params(
-        self,
-        weights,
-    ):
-        self.updated_weights = weights
-        filter_weights(self.updated_weights)
-        self.preds_mapper = None
-
     def fit(
         self,
         X_train,
@@ -120,7 +112,10 @@ class TabNetMixedTrainer(TabModel):
         check_array(X_train)
 
         self.update_fit_params(
-            weights,
+            X_train,
+            y_train,
+            eval_set,
+            weights
         )
 
         # Validate and reformat eval set depending on training data
@@ -347,7 +342,7 @@ class TabNetMixedTrainerRegressor(TabNetMixedTrainer):
     ):
         if len(y_train.shape) != 2:
             msg = "Targets should be 2D : (n_samples, n_regression) " + \
-                  f"but y_train.shape={y_train.shape} given.\n" + \
+                  f"but  y_train.shape={y_train.shape} given.\n" + \
                   "Use reshape(-1, 1) for single regression."
             raise ValueError(msg)
         self.output_dim = y_train.shape[1]
